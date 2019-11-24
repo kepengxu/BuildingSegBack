@@ -26,7 +26,7 @@ from albumentations.torch import ToTensor
 import os
 import random
 
-class CrowdaiData(data.Dataset):
+class AirsData(data.Dataset):
     def __init__(self,datasetdir,augWtarget=True,K=True,shape=160,seed=2019):
         self.datasetdir=datasetdir
         if K:
@@ -75,7 +75,11 @@ class CrowdaiData(data.Dataset):
 
 
 
-  
+
+
+
+
+
         image=ContrastEnhancement(image)
         mask = (Tmask >= 0.8).astype('float32')
         augment=self.TR(image=image,mask=mask)
