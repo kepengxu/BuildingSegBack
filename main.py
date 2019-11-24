@@ -12,11 +12,15 @@ print(socket.gethostname())
 from utils.metrics import *
 from preporcess.CrowdaiData import GetDataloader
 from multiprocessing import cpu_count
+from tensorboardX import SummaryWriter
+from models.HRNet import get_seg_model
+HRNet=get_seg_model()
 modeldict={
     'Unet8':UNet8,
     'UNetResNetV4':UNetResNetV4,
     'UNetResNetV6':UNetResNetV6,
-    'UNetResNetV5':UNetResNetV5
+    'UNetResNetV5':UNetResNetV5,
+    'HRNet':HRNet
 }
 import os
 from utils.RAdam import RAdam
@@ -32,7 +36,7 @@ console.setLevel(logging.INFO)
 
 logger.addHandler(handler)
 logger.addHandler(console)
-device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def get_lrs(optimizer):
     lrs = []
     for pgs in optimizer.state_dict()['param_groups']:
@@ -82,10 +86,16 @@ def train(config_path):
                                                 numworkers=int(cpu_count()))
     logger.info("Obtain Dataloader successful ")
     pathdir=os.path.join(config['dataroot'],config['modellogdir'],config['modeltype'])
+    logfilepath=os.path.join(pathdir,'log.txt')
+
     if not os.path.exists(pathdir):
         os.makedirs(pathdir)
     logger.info('The model ckp will save in :'+' <  '+pathdir+'  >')
-    model=modeldict[config['modeltype']](101,3,num_filters=32, dropout_2d=0.4).to(device)
+    if 'HRNet'==config['modeltype']:
+        model=HRNet
+    else:
+        model=modeldict[config['modeltype']](101,3,num_filters=32, dropout_2d=0.4)
+    model.to(device)
     bestiout=0.0
     if not config['init_ckp'] == 'None':
         CKP=config['init_ckp']
@@ -124,7 +134,7 @@ def train(config_path):
             loss=lossfunction(output, targets)
             F1SCORE=F1score(output.cpu().detach(),targets.cpu().detach())
             print('\r {:4d} | {:.5f} | {:8d}/{:8d} | {:.4f} | {:.4f} | {:.4f} |'.format(
-                epoch, float(clr[0]), config['batchsize'] * (batch_i + 1), traindataloader.__len__(), F1SCORE,loss.item(),
+                epoch, float(clr[0]), config['batchsize'] * (batch_i + 1), traindataloader.__len__()*config['batchsize'] , F1SCORE,loss.item(),
                                              train_loss / (batch_i + 1)), end='')
             loss.backward()
             optimizer.step()
@@ -138,6 +148,8 @@ def train(config_path):
             bestiout = iout
             path=pathdir+'/'+'Iout-{:.4f}-IoU-{:.4f}.pkl'.format(bestiout,iou)
             torch.save(model.state_dict(),path)
+        with open(logfilepath,'a') as f:
+            f.write(' {:.4f} | {:.4f} | {:.4f} | {:.2f} | {:4s}                               |\n'.format(iou, iout, bestiout, (time.time() - bg) / 60,pathdir))
         print(' {:.4f} | {:.4f} | {:.4f} | {:.2f} | {:4s}                               |'.format(iou, iout, bestiout, (time.time() - bg) / 60,pathdir))
         if config['lr_scheduler']== 'RP':
             lr_scheduler.step(bestiout)
