@@ -38,7 +38,7 @@ class AirsData(data.Dataset):
         else:
             self.imagedir = os.path.join(datasetdir, 'val', 'image')
             self.maskdir=os.path.join(datasetdir, "val ", 'label')
-            self.listfile = os.path.join(datasetdir, 'train', 'val.txt')
+            self.listfile = os.path.join(datasetdir, 'val', 'val.txt')
         self.imagelist = []
         with open(self.listfile) as f:
             for line in f:
@@ -51,24 +51,30 @@ class AirsData(data.Dataset):
         print('Dataset length:  ',len(self.imagelist))
         np.random.seed(seed)
         random.seed(seed)
-        self.samplesize = sqrt(2 * self.shape * self.shape)+3
+        self.samplesize =int( sqrt(2 * self.shape * self.shape)+3)
         self.pixnumbers=self.samplesize*self.samplesize*3
-        self.kk=np.zeros((self.samplesize,self.samplesize,3)).astype(np.bool)
+        self.kk=np.zeros((self.samplesize,self.samplesize,3),np.bool)
     def __len__(self):
         return len(self.imagelist)
 
     def __getitem__(self, k):
-        filename=self.imagelist[k]
+        filename=  self.imagelist[k]
+        # filename='christchurch_97_vis.tif'
+        if not os.path.exists(os.path.join(self.imagedir,filename)):
+            print(os.path.join(self.imagedir,filename))
         oimage=cv2.imread(os.path.join(self.imagedir,filename))
-        omask=cv2.imread(os.path.join(self.maskdir, filename))
-        while True:
+        omask=cv2.imread(os.path.join(self.maskdir, filename),flags=cv2.IMREAD_GRAYSCALE)
+        times=20
+        while not times==0:
+            times=times-1
             y0=random.randint(0,oimage.shape[0]-self.samplesize-5)
             x0=random.randint(0,oimage.shape[1]-self.samplesize-5)
             image=oimage[y0:y0+self.samplesize,x0:x0+self.samplesize,:]
             mask=omask[y0:y0+self.samplesize,x0:x0+self.samplesize]
             boolimage=image.astype(np.bool)
-            t =  1.0*np.sum(self.kk^boolimage)/self.pixnumbers
-            if t>0.9:
+            ppp=1.0*np.sum(self.kk*boolimage)
+            t =  1.0*np.sum(self.kk*boolimage)/self.pixnumbers
+            if t>0.8:
                 # have few zeros pix
                 break
 
@@ -83,7 +89,7 @@ class AirsData(data.Dataset):
 
 
         image=ContrastEnhancement(image)
-        mask = (Tmask >= 0.8).astype('float32')
+        mask = (mask >100).astype('float32')
         augment=self.TR(image=image,mask=mask)
         image=augment['image']
         mask=augment['mask']
@@ -109,7 +115,7 @@ class AirsData(data.Dataset):
                         rotate_limit=5,  # rotate
                         p=0.5,
                         border_mode=cv2.BORDER_REFLECT),
-                    PadIfNeeded(self.padshape, self.padshape),
+                    # PadIfNeeded(self.padshape, self.padshape),
 
                 ]
             )
@@ -127,7 +133,7 @@ class AirsData(data.Dataset):
 
 def GetDataloader(imagedir,
                   shape=256,
-                  batchsize=16,
+                  batchsize=2,
                   numworkers=4):
     '''
 
@@ -145,6 +151,10 @@ def GetDataloader(imagedir,
     return trainloader,valloader
 
 if '__main__'==__name__:
-    trainloader,valloader=GetDataloader('/Disk4/xkp/dataset/AIRS/')
+    trainloader,valloader=GetDataloader('/Disk4/xkp/dataset/AIRS/trainval',batchsize=1)
     for data in trainloader:
-        data
+        image,mask=data
+        tmask=mask[0,0,:,:].numpy()
+        print(np.sum(tmask))
+        print(image.shape,mask.shape)
+
