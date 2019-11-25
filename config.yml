@@ -1,4 +1,4 @@
-dataroot: "/Disk4/xkp/project/BuildingSeg"
+dataroot: "/Disk4/xkp/project/BuildingSegBackup"
 modellogdir: "LOG"
 modeltype: "HRNet"                            # Unet
 batchsize: 4

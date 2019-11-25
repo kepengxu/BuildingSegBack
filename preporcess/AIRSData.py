@@ -7,6 +7,7 @@ from preporcess.ContrastEnhance import ContrastEnhancement
 import numpy as np
 from pycocotools.coco import COCO
 from matplotlib import pyplot as plt
+from torch.utils.data import DataLoader
 from pycocotools import mask as cocomask
 from imgaug import augmenters as iaa
 from preporcess.augmentation import CenterCrop,\
@@ -50,7 +51,6 @@ class AirsData(data.Dataset):
         print('Dataset length:  ',len(self.imagelist))
         np.random.seed(seed)
         random.seed(seed)
-
         self.samplesize = sqrt(2 * self.shape * self.shape)+3
         self.pixnumbers=self.samplesize*self.samplesize*3
         self.kk=np.zeros((self.samplesize,self.samplesize,3)).astype(np.bool)
@@ -71,6 +71,8 @@ class AirsData(data.Dataset):
             if t>0.9:
                 # have few zeros pix
                 break
+
+
 
 
 
@@ -122,3 +124,27 @@ class AirsData(data.Dataset):
         )
         TR=Compose(List_Transforms)
         return TR
+
+def GetDataloader(imagedir,
+                  shape=256,
+                  batchsize=16,
+                  numworkers=4):
+    '''
+
+    :param imagedir:
+    :param shape:
+    :param padshape:
+    :param batchsize:
+    :param numworkers:
+    :return: trainloader and valloader
+    '''
+    traindata=AirsData(datasetdir=imagedir,K=True,shape=shape,)
+    valdata=AirsData(datasetdir=imagedir,K=False,shape=shape)
+    trainloader=DataLoader(traindata,batch_size = batchsize, shuffle = True, num_workers =numworkers)
+    valloader=DataLoader(valdata,batch_size = batchsize, shuffle = False,num_workers=numworkers)
+    return trainloader,valloader
+
+if '__main__'==__name__:
+    trainloader,valloader=GetDataloader('/Disk4/xkp/dataset/AIRS/')
+    for data in trainloader:
+        data
