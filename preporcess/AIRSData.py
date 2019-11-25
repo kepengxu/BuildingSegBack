@@ -52,8 +52,8 @@ class AirsData(data.Dataset):
         np.random.seed(seed)
         random.seed(seed)
         self.samplesize =int( sqrt(2 * self.shape * self.shape)+3)
-        self.pixnumbers=self.samplesize*self.samplesize*3
-        self.kk=np.zeros((self.samplesize,self.samplesize,3),np.bool)
+        self.pixnumbers=self.samplesize*self.samplesize
+        self.kk=np.ones((self.samplesize,self.samplesize),np.bool)
     def __len__(self):
         return len(self.imagelist)
 
@@ -65,18 +65,42 @@ class AirsData(data.Dataset):
         oimage=cv2.imread(os.path.join(self.imagedir,filename))
         omask=cv2.imread(os.path.join(self.maskdir, filename),flags=cv2.IMREAD_GRAYSCALE)
         times=20
-        while not times==0:
-            times=times-1
-            y0=random.randint(0,oimage.shape[0]-self.samplesize-5)
-            x0=random.randint(0,oimage.shape[1]-self.samplesize-5)
-            image=oimage[y0:y0+self.samplesize,x0:x0+self.samplesize,:]
-            mask=omask[y0:y0+self.samplesize,x0:x0+self.samplesize]
-            boolimage=image.astype(np.bool)
-            ppp=1.0*np.sum(self.kk*boolimage)
-            t =  1.0*np.sum(self.kk*boolimage)/self.pixnumbers
-            if t>0.8:
-                # have few zeros pix
-                break
+        # while not times==0:
+        #     times=times-1
+        #     y0=random.randint(0,oimage.shape[0]-self.samplesize-5)
+        #     x0=random.randint(0,oimage.shape[1]-self.samplesize-5)
+        #     image=oimage[y0:y0+self.samplesize,x0:x0+self.samplesize,:]
+        #     mask=omask[y0:y0+self.samplesize,x0:x0+self.samplesize]
+        #     boolmask=mask.astype(np.bool)
+        #     ppp=1.0*np.sum(self.kk*boolmask)
+        #     t =  1.0*np.sum(self.kk*boolmask)/self.pixnumbers
+        #     if t>0.1:
+        #         # have few zeros pix
+        #         break
+        tmask=cv2.resize(omask,(omask.shape[1]//100,omask.shape[0]//100),interpolation = cv2.INTER_NEAREST)
+        index=np.argwhere(np.array(tmask)>0.5)
+        while True:
+            if index.shape[0]<=1:
+                continue
+            tin=random.randint(0,index.shape[0]-1)
+            y=index[tin,0]
+            x=index[tin,1]
+            ty=random.randint(100*y-50,100*y+98)
+            tx=random.randint(100*x+1,100*x+98)
+            if ty>omask.shape[0]-self.shape-10:
+                continue
+            if tx>omask.shape[1]-self.shape-10:
+                continue
+            if ty<0:
+                continue
+            if tx<0:
+                continue
+            break
+
+        # After that ,tx ty 可以被用于 裁剪有效区域
+        #
+
+
 
 
 
