@@ -77,26 +77,29 @@ class AirsData(data.Dataset):
         #     if t>0.1:
         #         # have few zeros pix
         #         break
-        tmask=cv2.resize(omask,(omask.shape[1]//100,omask.shape[0]//100),interpolation = cv2.INTER_NEAREST)
+        tmask=cv2.resize(omask,(omask.shape[1]//100,omask.shape[0]//100),interpolation = cv2.INTER_CUBIC)
         index=np.argwhere(np.array(tmask)>0.5)
         while True:
             if index.shape[0]<=1:
-                continue
+                ty = random.randint(0,omask.shape[0]-self.shape-10)
+                tx = random.randint(0, omask.shape[1] - self.shape-10)
+                break
             tin=random.randint(0,index.shape[0]-1)
             y=index[tin,0]
             x=index[tin,1]
-            ty=random.randint(100*y-50,100*y+98)
-            tx=random.randint(100*x+1,100*x+98)
-            if ty>omask.shape[0]-self.shape-10:
+            ty=random.randint(100*y+5,100*y+98)
+            tx=random.randint(100*x+5,100*x+98)
+            if ty>omask.shape[0]-self.shape-5:
                 continue
-            if tx>omask.shape[1]-self.shape-10:
+            if tx>omask.shape[1]-self.shape-5:
                 continue
             if ty<0:
                 continue
             if tx<0:
                 continue
             break
-
+        image=oimage[ty:ty+self.shape,tx:tx+self.shape,:]
+        mask=np.array(omask[ty:ty+self.shape,tx:tx+self.shape]*255,np.uint8)
         # After that ,tx ty 可以被用于 裁剪有效区域
         #
 
@@ -105,8 +108,11 @@ class AirsData(data.Dataset):
 
 
 
-
-
+        #
+        # plt.imshow(image)
+        # plt.show()
+        # plt.imshow(mask)
+        # plt.show()
 
 
 
@@ -147,7 +153,7 @@ class AirsData(data.Dataset):
             [
 
                 # Normalize(mean=(0.397657144,0.351649219,0.305031406),std=(0.229, 0.224, 0.225)),
-                RandomCrop(self.shape, self.shape),
+                # RandomCrop(self.shape, self.shape),
                 ToTensor(),
 
             ]
@@ -175,10 +181,16 @@ def GetDataloader(imagedir,
     return trainloader,valloader
 
 if '__main__'==__name__:
-    trainloader,valloader=GetDataloader('/Disk4/xkp/dataset/AIRS/trainval',batchsize=1)
+    trainloader,valloader=GetDataloader('/Disk4/xkp/dataset/AIRS/trainval',batchsize=1,numworkers=1)
     for data in trainloader:
         image,mask=data
+
         tmask=mask[0,0,:,:].numpy()
+        timage=np.moveaxis(image[0,:,:,:].numpy(),0,-1)
+        plt.imshow(cv2.merge([timage[:,:,2],timage[:,:,1],timage[:,:,0]]))
+        plt.show()
+        plt.imshow(tmask)
+        plt.show()
         print(np.sum(tmask))
         print(image.shape,mask.shape)
 
