@@ -12,10 +12,10 @@ from utils.losses import get_lossf
 import socket
 print(socket.gethostname())
 from utils.metrics import *
-from preporcess.CrowdaiData import GetDataloader
+from preporcess.AIRSData import GetDataloader
+# from preporcess.CrowdaiData import GetDataloader
 from multiprocessing import cpu_count
 from tensorboardX import SummaryWriter
-from models.danet import DANet
 from models.HRNet import get_seg_model
 HRNet=get_seg_model()
 from models.StandUnet import Unet
@@ -27,8 +27,7 @@ modeldict={
     'UNetResNetV5':UNetResNetV5,
     'HRNet':HRNet,
     'Unet':Unet,
-    'RFFNet':RFFNet,
-    'DANet':DANet
+    'RFFNet':RFFNet
 }
 import os
 from utils.RAdam import RAdam
@@ -85,15 +84,19 @@ def train(config_path):
     logger.info('\n############################################################### \n ')
     logger.info(str(device) + ' Device is available ')
 
-    traindataloader,valdaraloader=GetDataloader(trainimagepath=config['CrowdaiData']['trainimagepath'],
-                                                 trainmaskpath=config['CrowdaiData']['trainmaskpath'],
-                                                  valimagepath=config['CrowdaiData']['valimagepath'],
-                                                   valmaskpath=config['CrowdaiData']['valmaskpath'],
-                                                shape=config['CrowdaiData']['shape'],
-                                                padshape=config['CrowdaiData']['padshape'],batchsize=config['batchsize'],
-                                                numworkers=int(cpu_count()))
+    traindataloader,valdaraloader= GetDataloader(config['AIRSData']['dirs'],
+                                                 batchsize=config['batchsize'],
+                                                 shape=config['CrowdaiData']['shape'],
+                                                 numworkers=int(cpu_count()//2))
+    # =GetDataloader(trainimagepath=config['CrowdaiData']['trainimagepath'],
+    #                                              trainmaskpath=config['CrowdaiData']['trainmaskpath'],
+    #                                               valimagepath=config['CrowdaiData']['valimagepath'],
+    #                                                valmaskpath=config['CrowdaiData']['valmaskpath'],
+    #                                             shape=config['CrowdaiData']['shape'],
+    #                                             padshape=config['CrowdaiData']['padshape'],batchsize=config['batchsize'],
+    #                                             numworkers=int(cpu_count()))
     logger.info("Obtain Dataloader successful ")
-    pathdir=os.path.join(config['dataroot'],'CROWD',config['modellogdir'],config['modeltype'])
+    pathdir=os.path.join(config['dataroot'],'AIRS',config['modellogdir'],config['modeltype'])
     logfilepath=os.path.join(pathdir,'log.txt')
 
     if not os.path.exists(pathdir):
@@ -104,8 +107,6 @@ def train(config_path):
     elif 'RFFNet'==config['modeltype']:
 
         model=RFFNet(3)
-    elif 'DANet'==config['modeltype']:
-        model=DANet(1,aux=False)
     elif 'Unet'==config['modeltype']:
         model = Unet(3,1)
     else:

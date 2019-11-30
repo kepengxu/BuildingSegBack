@@ -84,7 +84,7 @@ class CrowdaiData(data.Dataset):
                     ShiftScaleRotate(
                         shift_limit=0.1,  # no resizing
                         scale_limit=0.1,
-                        rotate_limit=5,  # rotate
+                        rotate_limit=3,  # rotate
                         p=0.5,
                         border_mode=cv2.BORDER_REFLECT),
                     PadIfNeeded(self.padshape, self.padshape),

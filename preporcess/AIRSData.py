@@ -162,7 +162,7 @@ class AirsData(data.Dataset):
         return TR
 
 def GetDataloader(imagedir,
-                  shape=256,
+                  shape=128,
                   batchsize=2,
                   numworkers=4):
     '''

@@ -1,7 +1,7 @@
 dataroot: "/Disk4/xkp/project/BuildingSegBackup"
 modellogdir: "LOG"
-modeltype: "HRNet"                            # Unet
-batchsize: 4
+modeltype: "DANet"                            # Unet
+batchsize: 16
 updatetimes: 2
 optimizer: Adam                               #   Adam or SGD
 lr: 0.001
@@ -15,3 +15,6 @@ CrowdaiData:
   valmaskpath:    "/Disk4/xkp/Segmenttion/xkp/Dataset/Crowdai/val/annotation.json"
   shape: 128
   padshape: 312
+AIRSData:
+  dirs: "/Disk4/xkp/dataset/AIRS/trainval"
+  shape: 256
