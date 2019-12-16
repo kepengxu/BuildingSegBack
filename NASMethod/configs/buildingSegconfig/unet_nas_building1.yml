@@ -1,0 +1,64 @@
+model:
+    arch: nas-unet
+data:
+    dataset: CrowdAi
+    trainimagepath: "/Disk4/xkp/Segmenttion/xkp/Dataset/Crowdai/train/images"
+    trainmaskpath:  "/Disk4/xkp/Segmenttion/xkp/Dataset/Crowdai/train/annotation.json"
+    valimagepath:   "/Disk4/xkp/Segmenttion/xkp/Dataset/Crowdai/val/images"
+    valmaskpath:    "/Disk4/xkp/Segmenttion/xkp/Dataset/Crowdai/val/annotation.json"
+    shape: 128
+    padshape: 312
+searching:
+    init_channels: 128
+    depth: 4
+    epoch: 300
+    batch_size: 12
+    report_freq: 20
+    n_workers: 6
+    alpha_begin: 2
+    max_patience: 40
+    gpu: True
+    multi_gpus: True
+    sharing_normal: True
+    double_down_channel: False
+    meta_node_num: 3
+    grad_clip: 5
+    train_portion: 0.5
+    model_optimizer:
+        name: 'sgd'
+        lr: 0.025
+        weight_decay: 5.0e-4
+    arch_optimizer:
+        name: 'adam'
+        lr: 3.0e-4
+        lr: 3.0e-4
+        weight_decay: 5.0e-3
+    loss:
+        name: 'BCEJaccardLoss'
+        size_average: False
+        aux_weight:
+    resume:
+training:
+    geno_type: GenotypeCrowdai
+    init_channels: 128
+    depth: 4
+    epoch: 80
+    batch_size: 32
+    report_freq: 20
+    n_workers: 4
+    multi_gpus: True
+    double_down_channel: False
+    grad_clip: 5
+    max_patience: 6
+    model_optimizer:
+        name: 'adabound'
+        lr: 1.0e-3
+        weight_decay: 5.0e-4
+    loss:
+        name: 'BCEJaccardLoss'
+        aux_weight: False
+    backbone:
+    lr_schedule:
+        name: 'cos'
+        T_max: 100
+    resume:
