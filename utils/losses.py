@@ -2,6 +2,7 @@ import torch.nn as nn
 import segmentation_models_pytorch.utils.functions as F
 
 
+
 class JaccardLoss(nn.Module):
     __name__ = 'jaccard_loss'
 
@@ -56,3 +57,9 @@ def get_lossf():
     def weightloss(pr,gt):
         return F(pr,gt)
     return weightloss
+
+LOSSDICT={'JaccardLoss':JaccardLoss,
+          'DiceLoss':DiceLoss,
+          'BCEJaccardLoss':BCEJaccardLoss,
+          'BCEDiceLoss':BCEDiceLoss
+          }

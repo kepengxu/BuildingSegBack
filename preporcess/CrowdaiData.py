@@ -25,7 +25,88 @@ from albumentations.torch import ToTensor
 import random
 
 
-class CrowdaiData(data.Dataset):
+class CrowdaiDataSearch(data.Dataset):
+    NUM_CLASS=1
+    IN_CHANNELS=3
+    def __init__(self,jsonpath,imagedir,augWtarget=True,padshape=400,K=True,shape=160,seed=2019,split=1):
+        self.jsonpath=jsonpath
+        self.split=split
+        self.imagedir=imagedir
+        self.shape=shape
+        self.seed=seed
+        self.coco=COCO(self.jsonpath)
+        self.cat_ids=self.coco.loadCats(self.coco.getCatIds())
+        self.Imageids=self.coco.getImgIds(catIds=self.coco.getCatIds())
+        self.augWtarget=True
+        self.is_train=K
+        self.padshape=padshape
+        self.TR=self.Auger()
+        print('Dataset length:  ',len(self.Imageids))
+        np.random.seed(seed)
+        random.seed(seed)
+
+    def __len__(self):
+        return len(self.Imageids)//(2)
+
+    def __getitem__(self, k):
+        index=self.Imageids[(len(self.Imageids)//2)*(self.split)+k]
+        img=self.coco.loadImgs(index)[0]
+        imagepath=os.path.join(self.imagedir,img['file_name'])
+        image=cv2.imread(imagepath)
+        annid=self.coco.getAnnIds(imgIds=img['id'])
+        ann=self.coco.loadAnns(annid)
+        Tmask=np.zeros(shape=(300,300))
+        for t in ann:
+            annseg = t['segmentation']
+            rle = cocomask.frPyObjects(annseg, img['height'], img['width'])
+            mask = cocomask.decode(rle)
+            mask = mask
+            mask = mask.reshape(img['height'], img['width'])
+            Tmask = Tmask + mask
+        image=ContrastEnhancement(image)
+        mask = (Tmask >= 0.8).astype('float32')
+        augment=self.TR(image=image,mask=mask)
+        image=augment['image']
+        mask=augment['mask']
+
+        return [image,mask]
+    def Auger(self):
+        List_Transforms=[]
+        if self.is_train:
+            List_Transforms.extend(
+                [
+                    HueSaturationValue(10, 10, 10, p=0.3),
+
+                    HorizontalFlip(0.3),
+                    VerticalFlip(p=0.3),
+
+                    # May be it not work,will rescale [0,255]  ->   [0.0,1.0]
+                    ToFloat(always_apply=True),
+
+
+                    ShiftScaleRotate(
+                        shift_limit=0.1,  # no resizing
+                        scale_limit=0.1,
+                        rotate_limit=3,  # rotate
+                        p=0.5,
+                        border_mode=cv2.BORDER_REFLECT),
+                    PadIfNeeded(self.padshape, self.padshape),
+
+                ]
+            )
+        List_Transforms.extend(
+            [
+                # [0.12110683835022196, 0.1308642819666743, 0.14265566800591103]
+                #Normalize(mean=(0.397657144,0.351649219,0.305031406),std=(0.12110683835022196, 0.1308642819666743, 0.14265566800591103)),
+                RandomCrop(self.shape, self.shape),
+                ToTensor(),
+
+            ]
+        )
+        TR=Compose(List_Transforms)
+        return TR
+
+class CrowdaiDataTrain(data.Dataset):
     def __init__(self,jsonpath,imagedir,augWtarget=True,padshape=400,K=True,shape=160,seed=2019):
         self.jsonpath=jsonpath
         self.imagedir=imagedir
@@ -104,8 +185,7 @@ class CrowdaiData(data.Dataset):
         return TR
 
 
-
-def GetDataloader(trainimagepath,
+def GetDataloaderTrain(trainimagepath,
                   trainmaskpath,
                   valimagepath,
                   valmaskpath,
@@ -113,12 +193,30 @@ def GetDataloader(trainimagepath,
                   padshape=312,
                   batchsize=16,
                   numworkers=4):
-    traindata=CrowdaiData(trainmaskpath,trainimagepath,padshape=padshape,shape=shape)
-    trainloader=data.DataLoader(traindata,batch_size=batchsize,shuffle = True, num_workers =numworkers)
+    traindata0=CrowdaiDataTrain(trainmaskpath,trainimagepath,padshape=padshape,shape=shape)
+    trainloader0=data.DataLoader(traindata0,batch_size=batchsize,shuffle = True, num_workers =numworkers,pin_memory=True)
 
-    valdata=CrowdaiData(valmaskpath,valimagepath,padshape=padshape,shape=shape,K=False)
-    valloader=data.DataLoader(valdata,batch_size=batchsize,shuffle = False, num_workers =numworkers)
-    return trainloader,valloader
+    valdata=CrowdaiDataTrain(valmaskpath,valimagepath,padshape=padshape,shape=shape,K=False)
+    valloader=data.DataLoader(valdata,batch_size=batchsize,shuffle = False, num_workers =numworkers,pin_memory=True)
+    return trainloader0,valloader
+
+def GetDataloaderSearch(trainimagepath,
+                  trainmaskpath,
+                  valimagepath,
+                  valmaskpath,
+                  shape=256,
+                  padshape=312,
+                  batchsize=16,
+                  numworkers=4):
+    traindata0=CrowdaiDataSearch(trainmaskpath,trainimagepath,padshape=padshape,shape=shape,split=0)
+    trainloader0=data.DataLoader(traindata0,batch_size=batchsize,shuffle = True, num_workers =numworkers,pin_memory=True)
+
+    traindata1=CrowdaiDataSearch(trainmaskpath,trainimagepath,padshape=padshape,shape=shape,split=1)
+    trainloader1=data.DataLoader(traindata1,batch_size=batchsize,shuffle = True, num_workers =numworkers,pin_memory=True)
+
+    valdata=CrowdaiDataSearch(valmaskpath,valimagepath,padshape=padshape,shape=shape,K=False)
+    valloader=data.DataLoader(valdata,batch_size=batchsize,shuffle = False, num_workers =numworkers,pin_memory=True)
+    return trainloader0,trainloader1,valloader
 
 
 
@@ -129,7 +227,7 @@ if __name__=='__main__':
     SIZE=300
     # CrowdaiData=CrowdaiData(valjsonpath,imagedir,padshape=312,)
     # gen=data.DataLoader(CrowdaiData,batch_size=1,)
-    gen,_=GetDataloader(imagedir,valjsonpath,imagedir,valjsonpath,numworkers=2)
+    gen,_=GetDataloaderTrain(imagedir,valjsonpath,imagedir,valjsonpath,numworkers=2)
 
 
 

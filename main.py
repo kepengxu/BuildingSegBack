@@ -15,19 +15,17 @@ from utils.metrics import *
 from preporcess.CrowdaiData import GetDataloader
 from multiprocessing import cpu_count
 from tensorboardX import SummaryWriter
-from models.danet import DANet
-from models.HRNet import get_seg_model
-HRNet=get_seg_model()
+from segmodel.core.models.danet import DANet
+
+
 from models.StandUnet import Unet
-from models.networks import RFFNet
+
 modeldict={
     'Unet8':UNet8,
     'UNetResNetV4':UNetResNetV4,
     'UNetResNetV6':UNetResNetV6,
     'UNetResNetV5':UNetResNetV5,
-    'HRNet':HRNet,
     'Unet':Unet,
-    'RFFNet':RFFNet,
     'DANet':DANet
 }
 import os
@@ -93,18 +91,15 @@ def train(config_path):
                                                 padshape=config['CrowdaiData']['padshape'],batchsize=config['batchsize'],
                                                 numworkers=int(cpu_count()))
     logger.info("Obtain Dataloader successful ")
-    pathdir=os.path.join(config['dataroot'],'CROWD',config['modellogdir'],config['modeltype'])
+    pathdir=os.path.join(config['dataroot'],config['modellogdir'],'CROWD',config['modeltype'])
     logfilepath=os.path.join(pathdir,'log.txt')
 
     if not os.path.exists(pathdir):
         os.makedirs(pathdir)
     logger.info('The model ckp will save in :'+' <  '+pathdir+'  >')
-    if 'HRNet'==config['modeltype']:
-        model=HRNet
-    elif 'RFFNet'==config['modeltype']:
 
-        model=RFFNet(3)
-    elif 'DANet'==config['modeltype']:
+
+    if 'DANet'==config['modeltype']:
         model=DANet(1,aux=False)
     elif 'Unet'==config['modeltype']:
         model = Unet(3,1)

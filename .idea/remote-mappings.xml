@@ -3,13 +3,7 @@
   <component name="RemoteMappingsManager">
     <list>
       <list>
-        <remote-mappings server-id="python@sftp://lsy@10.10.4.212:22/Disk4/xkp/conda3/bin/python">
-          <settings>
-            <list>
-              <mapping local-root="$PROJECT_DIR$" remote-root="/Disk4/xkp/project/BuildingSegBackup" />
-            </list>
-          </settings>
-        </remote-mappings>
+        <remote-mappings server-id="python@sftp://lsy@10.10.4.212:22/Disk4/xkp/conda3/bin/python" />
       </list>
     </list>
   </component>

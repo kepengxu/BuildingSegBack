@@ -2,10 +2,30 @@
 <project version="4">
   <component name="PublishConfigData">
     <serverData>
+      <paths name="BuildSegBack">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/Disk4/xkp/project/BuildingSegBackup" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/Disk4/xkp/project/BuildingSegBackup/LOG" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
       <paths name="labbuildingsegback">
         <serverdata>
           <mappings>
             <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath path="/LOG" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="lsy@10.10.4.212:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/Disk4/xkp/project/BuildingSegBackup" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
